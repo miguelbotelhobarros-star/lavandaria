@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Proposta de automação para lavandaria: contagem de peças com IA, avisos por WhatsApp, faturação certificada, rotas e pagamentos.">
+<meta property="og:title" content="Lavandaria sem papelada">
+<meta property="og:description" content="Menos tempo ao telefone e ao papel, mais tempo para a roupa. Proposta de automação, novembro de 2026.">
+<meta property="og:type" content="website">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 12V4h8l10 10-8 8z' fill='%23e0356b'/%3E%3Ccircle cx='7.5' cy='8' r='1.6' fill='%23fff'/%3E%3C/svg%3E">
+<title>Lavandaria sem papelada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE work: a proposal to read over lunch, on a phone
+   IDEA the paper tag pinned to every garment, with its stub and number
+   PICTURE the garment's journey: seven stops from balcão to fatura, each marked "hoje à mão" vs "automático"
+   COLOUR white ground, deep laundry blue, tag pink accent, soft blue tint fields
+   TYPE Archivo 800 + Source Sans 3
+   LAYOUT title + ask across the top, journey full width beneath; phone stacks the journey vertically */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0d1424);--ink:light-dark(#0f1b33,#e9eef8);--mute:light-dark(#4a5670,#a6b2c9);--blue:light-dark(#1446b8,#7aa2ff);--tint:light-dark(#eaf0fd,#16213a);--pink:light-dark(#e0356b,#ff7aa0);--tag:light-dark(#ffe3ec,#3a1a29);--line:light-dark(#d4dcec,#2a3756);--ok:light-dark(#0f7a4f,#5fd6a0);--okt:light-dark(#e3f6ec,#12301f);--okl:light-dark(#9fd9bb,#24573a)}
+:root[data-theme=light]{color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 "Source Sans 3",system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Archivo,system-ui,sans-serif;letter-spacing:-.02em;line-height:1.08;margin:0}
+h1{font-size:clamp(34px,5.4vw,52px);font-weight:800;max-width:17ch}
+h2{font-size:clamp(25px,3.2vw,32px);font-weight:800;max-width:30ch;margin-bottom:14px}
+h3{font-size:19px;font-weight:700}
+p{margin:0 0 12px}
+.band{padding-block:clamp(28px,4vw,56px);padding-left:max(5vw,16px,env(safe-area-inset-left,0px));padding-right:max(5vw,16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto}
+.tinted{background:var(--tint)}
+.top{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:clamp(20px,4vw,56px);align-items:end}
+.lede{font-size:19px;color:var(--mute);max-width:52ch;margin-top:14px}
+.ask{background:var(--tag);border-radius:10px;padding:18px 20px;position:relative}
+.ask::before{content:"";position:absolute;left:18px;top:-9px;width:16px;height:16px;border-radius:50%;background:var(--bg);border:3px solid var(--pink)}
+.ask b{color:var(--pink)}
+.ask p:last-child{margin:0}
+/* journey */
+.journey{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;margin-top:clamp(24px,3vw,40px);position:relative}
+.journey::before{content:"";position:absolute;left:7%;right:7%;top:34px;height:4px;background:var(--blue);border-radius:2px}
+.stop{text-align:center;padding:0 6px;position:relative}
+.dot{width:72px;height:72px;margin:0 auto 10px;border-radius:50%;background:var(--bg);border:4px solid var(--blue);display:grid;place-items:center;color:var(--blue)}
+.dot svg{width:34px;height:34px}
+.stop h3{font-size:16px;margin-bottom:8px}
+.was,.now{font-size:14px;line-height:1.35;border-radius:6px;padding:6px 8px;margin-top:6px}
+.was{background:var(--tag);color:var(--ink)}
+.now{background:var(--okt);border:1px solid var(--okl)}
+.was::before{content:"Hoje: ";font-weight:700;color:var(--pink)}
+.now::before{content:"Depois: ";font-weight:700;color:var(--ok)}
+.ex{margin-top:18px;border-top:2px solid var(--ink)}
+.ev{display:grid;grid-template-columns:7.5em minmax(0,1fr) minmax(0,320px);gap:8px 24px;padding:16px 0;border-bottom:1px solid var(--line);align-items:start}
+.ev time{font-family:Archivo,sans-serif;font-weight:700;font-size:16px;white-space:nowrap}
+.ev time small{display:block;font-family:'Source Sans 3',sans-serif;font-weight:400;color:var(--mute);font-size:14px}
+.who{display:inline-block;font-size:13px;font-weight:700;border-radius:4px;padding:1px 7px;margin-right:6px;vertical-align:1px}
+.w-c{background:var(--tag);color:var(--pink)}
+.w-e{background:var(--tint);color:var(--blue)}
+.w-l{background:var(--line);color:var(--ink)}
+.w-s{background:var(--okt);color:var(--ok)}
+.ev p{margin:6px 0 0}
+.ev .bal{font-size:14px;color:var(--mute)}
+.bub{background:var(--okt);border:1px solid var(--okl);border-radius:12px 12px 12px 3px;padding:10px 12px;font-size:15px;line-height:1.4}
+.bub.in{background:var(--tag);border-color:transparent;border-radius:12px 12px 3px 12px}
+.bub b{display:block;font-size:12px;color:var(--mute);font-weight:600;margin-bottom:2px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(15em,1fr));gap:12px;margin-top:20px}
+.sum div{border-radius:10px;padding:14px 16px}
+@media(max-width:900px){.ev{grid-template-columns:6em minmax(0,1fr)}.ev .bub{grid-column:2}}
+@media(max-width:520px){.ev{grid-template-columns:minmax(0,1fr)}.ev .bub{grid-column:1}}
+
+.stage{border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:18px;background:var(--bg)}
+.track{position:relative;padding:26px 12px 14px;background:var(--tint)}
+.rail{position:absolute;left:calc(12px + 3.5%);right:calc(12px + 3.5%);top:50px;height:4px;background:var(--line);border-radius:2px}
+.railfill{position:absolute;left:0;top:0;bottom:0;background:var(--blue);border-radius:2px;transition:width .9s ease}
+.sts{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));position:relative}
+.st{text-align:center;font-size:13px;font-weight:600;color:var(--mute)}
+.st i{display:grid;place-items:center;width:48px;height:48px;margin:0 auto 6px;border-radius:50%;background:var(--bg);border:3px solid var(--line);color:var(--mute);transition:all .4s}
+.st i svg{width:24px;height:24px}
+.st.on i{border-color:var(--blue);color:var(--blue)}
+.st.cur i{background:var(--blue);color:#fff;border-color:var(--blue);transform:scale(1.12)}
+.st.cur{color:var(--ink)}
+.bag{position:absolute;top:2px;width:30px;height:30px;margin-left:-15px;transition:left .9s cubic-bezier(.5,0,.3,1);z-index:2;pointer-events:none}
+.bag svg{width:30px;height:30px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+.scene{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,330px);gap:20px;padding:20px}
+.cap .n{font-size:14px;color:var(--mute);font-weight:600}
+.cap h3{font-size:clamp(22px,3vw,28px);margin:4px 0 8px}
+.cap p{margin:0 0 10px}
+.tally{list-style:none;padding:0;margin:8px 0 0;font-size:15px;border-top:1px solid var(--line)}
+.tally li{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line);animation:pop .4s both}
+.tally li b{white-space:nowrap}
+.tally li.tot{font-weight:700;color:var(--blue)}
+.cam{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.cam span{font-size:13px;font-weight:600;padding:3px 8px;border-radius:4px;background:var(--okt);color:var(--ok);border:1px solid var(--okl);animation:pop .35s both}
+.phone{background:light-dark(#efe7dd,#1c2333);border-radius:22px;border:6px solid var(--ink);padding:12px 10px;min-height:230px;display:flex;flex-direction:column;justify-content:flex-end;gap:8px}
+.phone .hd{font-size:13px;font-weight:700;color:var(--mute);text-align:center;margin-bottom:auto}
+.phone .bub{animation:pop .45s both;max-width:92%}
+.phone .bub.in{align-self:flex-end}
+.phone .none{font-size:14px;color:var(--mute);text-align:center;margin:auto 0}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.ctrls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:0 20px 18px}
+.ctrls button{font:600 15px 'Source Sans 3',sans-serif;min-height:44px;padding:0 16px;border-radius:22px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.ctrls button.pri{background:var(--blue);color:#fff;border-color:var(--blue)}
+.ctrls button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.dots{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.dots button{min-height:0;width:14px;height:14px;padding:0;border-radius:50%;background:var(--line);border:0}
+.dots button.on{background:var(--blue)}
+.kit{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);margin-top:18px}
+.kit table td:last-child,.kit table th:last-child{text-align:right;white-space:nowrap}
+.kit td:first-child{width:auto}
+.kit tfoot td{font-weight:700;border-bottom:0;color:var(--blue)}
+.bench{counter-reset:b;list-style:none;padding:0;margin:0}
+.bench li{counter-increment:b;display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.bench li::before{content:counter(b);width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;display:grid;place-items:center;font-size:14px}
+@media(max-width:760px){.scene,.kit{grid-template-columns:minmax(0,1fr)}.dots{margin-left:0;width:100%}}
+@media(max-width:460px){.st{font-size:11.5px}.st i{width:38px;height:38px}.st i svg{width:20px;height:20px}.rail{top:45px}}
+@media(prefers-reduced-motion:reduce){.bag,.railfill,.st i{transition:none}.tally li,.cam span,.phone .bub{animation:none}}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:22px;font-size:15px;color:var(--mute)}
+/* problems table */
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:16px}
+th,td{text-align:left;vertical-align:top;padding:12px 12px;border-bottom:1px solid var(--line)}
+th{font-family:Archivo,sans-serif;font-size:14px;color:var(--mute);font-weight:700}
+td:first-child{font-weight:700;width:22%}
+.tool{color:var(--blue);font-weight:600}
+/* phases */
+.phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:20px}
+.phase{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:20px;position:relative;overflow:hidden}
+.phase .when{display:inline-block;font-weight:700;font-size:14px;color:var(--bg);background:var(--blue);border-radius:4px;padding:2px 8px;margin-bottom:10px}
+.phase.p1 .when{background:var(--pink)}
+.phase ul{margin:10px 0 0;padding-left:20px}
+.phase li{margin-bottom:6px}
+.cost{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line);font-size:15px;color:var(--mute)}
+/* calculator */
+.calc{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);align-items:start;margin-top:18px}
+.ctl{display:grid;gap:16px}
+.ctl label{display:flex;justify-content:space-between;gap:12px;font-weight:600;font-size:16px}
+.ctl output{white-space:nowrap;color:var(--blue);font-weight:700}
+input[type=range]{width:100%;accent-color:var(--blue);height:32px}
+.result{background:var(--blue);color:#fff;border-radius:12px;padding:22px;position:sticky;top:12px}
+.big{font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(48px,7vw,72px);line-height:1;letter-spacing:-.03em}
+.rows{margin-top:14px;font-size:15px}
+.rows div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-top:1px solid rgba(255,255,255,.25)}
+.rows span:last-child{white-space:nowrap;font-weight:700}
+.small{font-size:14px;color:var(--mute)}
+.result .small{color:rgba(255,255,255,.8);margin-top:12px}
+/* two col */
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,4vw,48px)}
+.qs{counter-reset:q;list-style:none;padding:0;margin:0}
+.qs li{counter-increment:q;padding:10px 0 10px 40px;border-bottom:1px solid var(--line);position:relative}
+.qs li::before{content:counter(q);position:absolute;left:0;top:9px;width:28px;height:28px;border-radius:50%;background:var(--tag);color:var(--pink);font-weight:700;display:grid;place-items:center;font-size:14px}
+.law li{margin-bottom:10px}
+.foot{font-size:14px;color:var(--mute)}
+@media(max-width:900px){.journey{grid-template-columns:minmax(0,1fr)}.journey::before{left:34px;right:auto;top:20px;bottom:20px;width:4px;height:auto}.stop{display:grid;grid-template-columns:72px minmax(0,1fr);gap:0 14px;text-align:left;padding:0 0 18px}.dot{margin:0;grid-row:span 3}.stop h3{margin:10px 0 2px}}
+@media(max-width:760px){.top,.calc,.two{grid-template-columns:minmax(0,1fr)}.phases{grid-template-columns:minmax(0,1fr)}.result{position:static}}
+@media(max-width:600px){table{font-size:15px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{border:0;padding:3px 0;width:auto!important}.stack td::before{content:attr(data-l);display:block;font-size:13px;color:var(--mute);font-weight:600}}
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="wrap top">
+    <div>
+      <h1>Menos tempo ao telefone e ao papel, mais tempo para a roupa</h1>
+      <p class="lede">Uma proposta para tirar da sua lavandaria o trabalho repetitivo: contar e dar preço às peças, mensagens aos clientes, faturas, o saldo de peças do mês, as rotas de entrega e os pagamentos.</p>
+      <p class="small" style="margin-top:6px">Proposta de automação · novembro de 2026</p>
+    </div>
+    <div class="ask">
+      <p><b>A proposta:</b> começar com um piloto de 30 dias na bancada. Cada peça é fotografada com um telemóvel, a IA diz o que é e quanto custa, e o cliente recebe a lista com o preço no próprio dia.</p>
+      <p>Medimos o tempo poupado e só depois avançamos para o resto. Sem mudar a forma de trabalhar de um dia para o outro, e sempre com faturação certificada pela AT.</p>
+    </div>
+  </div>
+</header>
+
+<section class="band" id="filme">
+  <div class="wrap">
+    <h2>Do saco à fatura em 12 passos: veja o filme</h2>
+    <p style="max-width:66ch">Acompanhe o saco da D. Teresa (cliente de exemplo) desde que sai de casa até voltar engomado. O filme avança sozinho; pode pausar ou saltar para qualquer passo.</p>
+    <div class="stage">
+      <div class="track">
+        <div class="rail"><div class="railfill" id="rf"></div></div>
+        <div class="sts" id="sts"></div>
+        <div class="bag" id="bag" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1.5 13h-11z" fill="#e0356b"/><path d="M9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="#e0356b" stroke-width="2"/><rect x="9.5" y="12" width="5" height="5" fill="#fff"/><path d="M10.5 13h1v1h-1zM12.5 15h1v1h-1z" fill="#0f1b33"/></svg></div>
+      </div>
+      <div class="scene">
+        <div class="cap" aria-live="polite"><div class="n" id="an"></div><h3 id="at"></h3><p id="ax"></p><div id="aextra"></div></div>
+        <div class="phone"><div class="hd">WhatsApp da D. Teresa</div><div id="chat" style="display:flex;flex-direction:column;gap:8px"></div></div>
+      </div>
+      <div class="ctrls">
+        <button id="prev" aria-label="Passo anterior">Anterior</button>
+        <button id="play" class="pri">Pausar</button>
+        <button id="next" aria-label="Passo seguinte">Seguinte</button>
+        <button id="again">Ver de novo</button>
+        <div class="dots" id="dots"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band tinted">
+  <div class="wrap">
+    <h2>O caminho de cada peça, do balcão à fatura</h2>
+    <p style="max-width:62ch">Hoje cada passo depende de alguém se lembrar de o fazer. Com um registo único por peça, os passos seguintes acontecem sozinhos.</p>
+    <div class="journey" id="journey"></div>
+    <div class="legend"><span><b style="color:var(--pink)">Hoje</b> como costuma ser feito hoje</span><span><b style="color:var(--ok)">Depois</b> o que o sistema faz</span></div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>Um exemplo de porta a porta: recolha em casa e entrega da roupa engomada</h2>
+    <p style="max-width:66ch">A D. Teresa (cliente de exemplo) lava a roupa em casa, pede na segunda que lhe venham buscar o saco e recebe a roupa engomada em casa na quinta à tarde. Eis quem faz o quê, e o que acontece sozinho.</p>
+    <div class="ex" id="ex"></div>
+    <div class="sum">
+      <div style="background:var(--tag)"><b>Feito por pessoas:</b> recolher o saco, passar as peças pela câmara, engomar e entregar. O trabalho de sempre.</div>
+      <div style="background:var(--okt)"><b>Feito pelo sistema:</b> marcar a recolha, montar as rotas, contar e reconhecer as peças, calcular o preço, enviar todas as mensagens, cobrar, faturar e atualizar o saldo de peças.</div>
+      <div style="background:var(--tint)"><b>Ganho extra:</b> a cliente recebe a contagem com fotos e o preço no próprio dia da recolha e confirma-os. Isso acaba com as discussões sobre "faltava uma camisa".</div>
+    </div>
+  </div>
+</section>
+
+<section class="band tinted">
+  <div class="wrap">
+    <h2>Cada problema tem uma solução que já existe</h2>
+    <div class="scroll">
+      <table class="stack">
+        <thead><tr><th>Problema</th><th>Solução</th><th>Ferramentas possíveis</th></tr></thead>
+        <tbody id="probs"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <h2>Três fases, começando pelo que poupa mais tempo já</h2>
+    <div class="phases" id="phases"></div>
+    <p class="small" style="margin-top:14px">Valores indicativos de preços públicos de fornecedores, sem IVA, a confirmar com cada um. O valor da implementação é apresentado à parte.</p>
+  </div>
+</section>
+
+<section class="band tinted">
+  <div class="wrap">
+    <h2>O kit para o piloto: menos de 300 € em material</h2>
+    <p style="max-width:66ch">Para testar a contagem por câmara durante 30 dias não é preciso comprar máquinas. Basta uma bancada bem iluminada e um telemóvel fixo por cima.</p>
+    <div class="kit">
+      <div>
+        <h3 style="margin-bottom:8px">Material</h3>
+        <div class="scroll"><table>
+          <thead><tr><th>Peça</th><th>Para quê</th><th>Preço</th></tr></thead>
+          <tbody>
+            <tr><td>Telemóvel</td><td>Câmara e ecrã. Serve um que já tenha ou um usado</td><td>0 a 150 €</td></tr>
+            <tr><td>Braço de telemóvel</td><td>Prende-o na bancada, virado para baixo</td><td>25 a 40 €</td></tr>
+            <tr><td>Luz LED em anel ou painel</td><td>Fotos iguais a qualquer hora</td><td>20 a 30 €</td></tr>
+            <tr><td>Tapete de cor lisa</td><td>Fundo cinzento ou verde para a IA ver bem a peça</td><td>cerca de 10 €</td></tr>
+            <tr><td>Impressora de etiquetas + etiquetas</td><td>Etiquetas com QR para os sacos (ex.: Brother, Niimbot)</td><td>30 a 60 €</td></tr>
+          </tbody>
+          <tfoot><tr><td colspan="2">Total</td><td>85 a 290 €</td></tr></tfoot>
+        </table></div>
+        <h3 style="margin:20px 0 8px">Programas</h3>
+        <ul style="margin:0;padding-left:20px">
+          <li><b>App simples no telemóvel</b>, feita à medida: ler o QR, fotografar (ou escolher uma foto da galeria), confirmar peça e preço.</li>
+          <li><b>IA de visão</b> que reconhece 35 tipos de peça em 8 grupos: alguns cêntimos por saco.</li>
+          <li><b>Folha de dados</b> (Google Sheets ou Airtable, grátis no início) com clientes, sacos e tabela de preços.</li>
+          <li><b>WhatsApp e faturas ficam à mão</b> durante o piloto, como hoje. Só se automatizam depois de a contagem provar que funciona.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="margin-bottom:8px">Como se usa na bancada</h3>
+        <ol class="bench">
+          <li><span><b>Ler o QR do saco.</b> Abre a ficha do cliente.</span></li>
+          <li><span><b>Esticar a peça</b> no tapete, debaixo do telemóvel.</span></li>
+          <li><span><b>Foto.</b> A IA diz "camisa, 1,90 €". Se a peça não encaixar em nenhum tipo, mostra "Outra" em vez de adivinhar.</span></li>
+          <li><span><b>Confirmar com um toque</b>, ou corrigir. A IA aprende com cada correção da funcionária.</span></li>
+          <li><span><b>Próxima peça.</b> No fim aparece o talão com o total e a mensagem de WhatsApp, pronta a enviar ao cliente.</span></li>
+        </ol>
+        <p class="small" style="margin-top:14px">Preços de material indicativos, de lojas online em Portugal, a confirmar na compra. Cerca de 5 a 10 segundos por peça, a medir no piloto.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap two" style="align-items:center">
+    <div>
+      <h2>A contagem por IA já funciona: experimente o protótipo</h2>
+      <p>Preparámos um protótipo que se usa no telemóvel, para ver a ideia a funcionar antes de comprar qualquer material.</p>
+      <ul class="law" style="padding-left:20px">
+        <li>Tira a foto com a câmara ou escolhe-a da galeria.</li>
+        <li>Reconhece 35 tipos de peça, organizados em 8 grupos.</li>
+        <li>Quando não tem a certeza, mostra "Outra" com o nome que lhe parece, em vez de forçar um tipo.</li>
+        <li>Aprende com as correções da funcionária.</li>
+        <li>Usa uma tabela de preços que a loja pode alterar e, no fim, mostra o talão e a mensagem para o cliente.</li>
+      </ul>
+    </div>
+    <div class="ask" style="background:var(--okt)">
+      <p><b style="color:var(--ok)">Protótipo de contagem</b></p>
+      <p>Abra no telemóvel, fotografe uma peça de roupa e veja o tipo e o preço aparecerem.</p>
+      <p><a href="https://claude.ai/artifact/9u9eXaNQHEca8j1CeGpbPL" style="display:inline-block;background:var(--ok);color:#fff;font-weight:700;padding:10px 18px;border-radius:22px;text-decoration:none">Abrir o protótipo</a></p>
+    </div>
+  </div>
+</section>
+
+<section class="band tinted">
+  <div class="wrap">
+    <h2>Quanto tempo se ganha? Ajuste com os números da sua lavandaria</h2>
+    <div class="calc">
+      <div class="ctl" id="ctl"></div>
+      <div class="result" aria-live="polite">
+        <div>Horas poupadas por mês</div>
+        <div class="big" id="hrs">0 h</div>
+        <div class="rows" id="rows"></div>
+        <p class="small">Estimativa: assume que a automação elimina cerca de 80% do tempo de cada tarefa e que as rotas encurtam 20%. Os valores iniciais são de uma lavandaria média; ajuste-os à sua.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap two">
+    <div>
+      <h2>Para afinarmos a proposta, precisamos de saber</h2>
+      <ol class="qs" id="qs"></ol>
+    </div>
+    <div>
+      <h2>Regras que o projeto cumpre</h2>
+      <ul class="law">
+        <li><b>Faturação certificada.</b> Em Portugal as faturas têm de sair de um programa certificado pela AT, com ATCUD e código QR, e ser comunicadas à AT. Por isso a automação liga-se a um programa certificado (Moloni, InvoiceXpress, Vendus ou o que o contabilista já usa) e nunca o substitui.</li>
+        <li><b>SAF-T e contabilista.</b> O programa gera o ficheiro SAF-T mensal; vale a pena escolher um que o seu contabilista já conheça.</li>
+        <li><b>RGPD.</b> Guardar só o necessário (nome, telefone, morada de entrega, NIF se pedir fatura), pedir consentimento para avisos por WhatsApp, permitir sair a qualquer momento e ter acordo de tratamento de dados com cada fornecedor.</li>
+        <li><b>WhatsApp oficial.</b> Envios automáticos só pela API oficial do WhatsApp Business, com modelos de mensagem aprovados. Ferramentas que "imitam" o telemóvel arriscam bloquear o número.</li>
+        <li><b>Pagamentos.</b> MB WAY e referências Multibanco através de um prestador autorizado (ifthenpay, Eupago, Easypay, SIBS). A loja nunca guarda dados de cartões.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer class="band tinted">
+  <div class="wrap">
+    <h2>Próximos passos</h2>
+    <ol class="bench" style="max-width:66ch">
+      <li><span><b>Conversa e visita.</b> Responder às perguntas acima e passar meio dia na loja a ver um dia normal.</span></li>
+      <li><span><b>Montar o kit</b> na bancada e configurar a tabela de preços da sua lavandaria.</span></li>
+      <li><span><b>Piloto de 30 dias</b>, medindo o tempo gasto antes e depois.</span></li>
+      <li><span><b>Decidir juntos</b> se e quando avançar para a fase 2.</span></li>
+    </ol>
+    <p class="foot" style="margin-top:16px">Os tempos e preços nesta proposta são estimativas e não constituem um orçamento.</p>
+  </div>
+</footer>
+
+<script>
+{
+const ic={
+tag:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8" r="1.6"/></svg>',
+wash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2.5" width="16" height="19" rx="2"/><circle cx="12" cy="13" r="5"/><path d="M7 6h2"/></svg>',
+iron:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 18h18c0-5-3-9-8-9H7"/><path d="M8 6h6"/></svg>',
+msg:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 20l1.5-4A8 8 0 1 1 9 19.3z"/><path d="M9 11.5l2 2 4-4"/></svg>',
+van:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M2 6h12v10H2zM14 9h4l4 4v3h-8z"/><circle cx="6" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>',
+pay:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4M9.5 9.5l2 2 3-3.5"/></svg>',
+home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v10H3z"/><path d="M10 21v-6h4v6"/></svg>',
+cam:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/></svg>',
+doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 2h10l4 4v16H5z"/><path d="M9 10h6M9 14h6M9 18h3"/></svg>'};
+const J=[
+['van','Recolha do saco','Combinada por telefone ou WhatsApp, à mão','Marcada pelo WhatsApp; o saco leva uma etiqueta com QR'],
+['cam','Contar e dar preço','Peças contadas e preço calculado à mão','A câmara conta as peças, a IA reconhece cada tipo e aplica o preço'],
+['iron','Engomar','Saber o que está pronto obriga a procurar','Marcar "pronto" com um toque'],
+['msg','Avisar o cliente','WhatsApp escrito um a um','Lista com fotos e preço no dia da recolha; aviso automático de "pronto"'],
+['van','Entregar','Rota decidida de cabeça','Rota do dia ordenada pelo mapa, no telemóvel do estafeta'],
+['pay','Receber','Dinheiro ou transferência a conferir','Link MB WAY ou referência Multibanco na mensagem'],
+['doc','Faturar e fechar o mês','Faturas à mão, saldo de peças contado no fim do mês','Fatura certificada emitida sozinha; saldo de peças calculado e passado ao mês seguinte']];
+document.getElementById('journey').innerHTML=J.map(s=>`<div class="stop"><div class="dot">${ic[s[0]]}</div><h3>${s[1]}</h3><div class="was">${s[2]}</div><div class="now">${s[3]}</div></div>`).join('');
+
+const W={c:['w-c','Cliente'],e:['w-e','Estafeta'],l:['w-l','Loja'],s:['w-s','Sistema']};
+const E=[
+['Seg 09:12','Pedido','c','Envia um WhatsApp a pedir uma recolha.','s','O assistente responde com as horas livres, marca a recolha e cria a ficha da cliente (ou usa a que já existe).','in','Bom dia, podem vir buscar roupa para engomar amanhã?','Combinado, D. Teresa! Recolha amanhã, terça, entre as 10h e as 12h.'],
+['Ter 08:30','Rota da manhã','s','Junta as recolhas e entregas do dia numa só rota e põe-na no telemóvel do estafeta, por ordem.','','','','','Bom dia! O nosso estafeta chega hoje entre as 10h30 e as 11h00.'],
+['Ter 10:47','Recolha do saco','e','Recolhe o saco fechado com a roupa já lavada, sem o abrir nem contar nada. Cola-lhe uma etiqueta com QR, que o liga à ficha da D. Teresa.','s','Avisa a cliente de que o saco já vai a caminho da loja.','','','Recolhemos o seu saco. Contamos as peças na loja e enviamos-lhe a lista ainda hoje.'],
+['Ter 12:00','Contagem e preço na loja','l','Abre o saco na bancada, debaixo da câmara, e passa as peças uma a uma.','s','A IA conta as peças, reconhece cada tipo (camisa, calças, lençol) e aplica o preço da tabela. A funcionária só confirma ou corrige com um toque. O saldo do mês da cliente passa a ter 14 peças por entregar.','','',''],
+['Ter 12:05','Comprovativo para a cliente','s','Envia à cliente a lista das peças, as fotos e o valor previsto, para ela confirmar no próprio dia.','c','Confirma com uma resposta curta, ou reclama logo se faltar alguma coisa.','','OK, obrigada!','Contámos 14 peças no seu saco: 8 camisas, 4 calças e 2 lençóis (fotos no link). Valor previsto: 23,80 €. Está tudo certo? Responda OK.'],
+['Ter a Qua','Engomar','l','Engoma como sempre. No fim, lê o QR do saco e a encomenda fica marcada como pronta.','','','','',''],
+['Qua 16:05','Roupa pronta','s','Avisa a cliente e propõe uma hora de entrega.','c','Escolhe a hora com uma resposta curta.','','1','A sua roupa está pronta! Entregamos amanhã, quinta, entre as 18h e as 20h? Responda 1 para sim ou 2 para outra hora.'],
+['Qui 17:30','Rota da tarde','s','Põe a entrega na rota da tarde e avisa quando o estafeta sai para a morada dela.','','','','','O estafeta está a caminho e chega dentro de cerca de 20 minutos.'],
+['Qui 18:20','Entrega em casa','e','Entrega a roupa engomada e lê o QR. A cliente confirma a receção com um toque no ecrã.','s','Saldo do mês: entregues 14, por entregar 0.','','',''],
+['Qui 18:21','Pagamento','s','Envia o valor com link MB WAY e referência Multibanco. Clientes com conta mensal não pagam agora: o valor fica na conta do mês.','c','Paga pelo telemóvel em segundos.','','','Total: 23,80 €. Pague por MB WAY aqui ou com a referência Multibanco: Ent. 12345, Ref. 123 456 789.'],
+['Qui 18:24','Fatura','s','Ao receber o pagamento, o programa certificado emite a fatura-recibo (com NIF, se pedido) e envia-a à cliente. Fica comunicada à AT e no SAF-T.','','','','','Pagamento recebido, obrigado! Segue a sua fatura-recibo em PDF.'],
+['30 Nov','Fecho do mês','s','Fecha o saldo de cada cliente. Os sacos que ainda estão na loja (por exemplo, um que chegou na sexta para engomar na semana seguinte) passam sozinhos para o saldo de dezembro. Clientes com conta mensal recebem um resumo e uma só fatura.','','','','','']];
+const chip=k=>`<span class="who ${W[k][0]}">${W[k][1]}</span>`;
+document.getElementById('ex').innerHTML=E.map(e=>{const [t,ttl,a1,x1,a2,x2,,inb,outb]=e;const [d,h]=t.split(' ');
+const bub=(inb?`<div class="bub in"><b>D. Teresa</b>${inb}</div>`:'')+(outb?`<div class="bub" style="margin-top:${inb?'6px':'0'}"><b>Lavandaria (automático)</b>${outb}</div>`:'');
+return `<div class="ev"><time>${h||d}<small>${h?d:''}</small></time><div><h3>${ttl}</h3><p>${chip(a1)}${x1}</p>${a2?`<p>${chip(a2)}${x2}</p>`:''}</div><div>${bub}</div></div>`}).join('');
+
+const P=[
+['WhatsApps escritos à mão','Mensagens enviadas sozinhas quando a peça muda de estado: recebida, pronta, a caminho, por pagar. Respostas rápidas para as perguntas de sempre.','<span class="tool">WhatsApp Business</span> (grátis, para começar) e depois a API oficial do WhatsApp via um parceiro (360dialog, Twilio) ou o próprio software de lavandaria'],
+['Faturas emitidas à mão','Cada entrega ou fim de mês gera a fatura certificada automaticamente, enviada por WhatsApp ou e-mail.','<span class="tool">Moloni</span>, <span class="tool">InvoiceXpress</span> ou <span class="tool">Vendus</span>: todos certificados pela AT e com ligação a outros sistemas'],
+['Contar peças e calcular o preço','Uma câmara na bancada conta as peças de cada saco e a IA reconhece o tipo de peça para aplicar o preço. A funcionária só confirma.','Telemóvel fixo sobre a bancada e reconhecimento de imagem com IA, feito à medida (protótipo já a funcionar)'],
+['Saldo de peças que transita de mês','Uma lista viva de peças por cliente: entraram, entregues, por entregar. No fim do mês o saldo fecha sozinho e passa para o mês seguinte. Clientes com conta mensal recebem um resumo e uma só fatura.','Registo simples em <span class="tool">Airtable</span> ou <span class="tool">Google Sheets + AppSheet</span>, ou um software de lavandaria pronto (ex.: CleanCloud)'],
+['Rotas de entrega','A lista de entregas do dia vira uma rota otimizada, com aviso ao cliente "chegamos entre as 15h e as 16h".','<span class="tool">Circuit</span>, <span class="tool">RouteXL</span> ou o módulo de rotas do software de lavandaria'],
+['Pagamentos e dívidas','Cada aviso leva um link de pagamento MB WAY ou referência Multibanco. Quem não pagou recebe um lembrete simpático passados alguns dias.','<span class="tool">ifthenpay</span>, <span class="tool">Eupago</span>, <span class="tool">Easypay</span>: comissões por pagamento, normalmente sem mensalidade alta'],
+['Perguntas repetidas dos clientes','Um assistente com IA no WhatsApp responde a "a minha roupa já está pronta?", horários e preços, e marca recolhas. Passa para uma pessoa quando não sabe.','Assistente ligado ao registo de peças; feito à medida sobre a API do WhatsApp']];
+document.getElementById('probs').innerHTML=P.map(r=>`<tr><td data-l="Problema">${r[0]}</td><td data-l="Solução">${r[1]}</td><td data-l="Ferramentas">${r[2]}</td></tr>`).join('');
+
+const F=[
+['p1','Fase 1 · piloto de 30 dias','Contar e dar preço sem papel',['Kit na bancada: telemóvel, luz e etiquetas com QR para os sacos','A IA reconhece cada peça e aplica a tabela de preços da loja','Lista com fotos e preço enviada ao cliente no dia da recolha','Registo de sacos por cliente e saldo de peças do mês','Medição do tempo poupado'],'Material: 85 a 290 €, uma só vez. IA: alguns cêntimos por saco'],
+['p2','Fase 2 · meses 2 e 3','Faturas, avisos e pagamentos',['Programa de faturação certificado ligado ao registo de sacos','Avisos automáticos por WhatsApp: recebido, pronto, a caminho','Pagamento por MB WAY e referência Multibanco, com lembretes','Contas mensais de clientes (empresas, hotéis, restaurantes) com fatura única','Rotas otimizadas e hora de entrega enviada ao cliente'],'Cerca de 15 a 85 €/mês (faturação, WhatsApp, rotas) mais comissões por pagamento'],
+['p3','Fase 3 · a partir do mês 4','IA a trabalhar para a loja',['Assistente no WhatsApp para estado dos sacos, preços e marcação de recolhas','Resumo semanal: faturação, sacos em atraso, clientes que deixaram de vir','Previsão dos dias de mais trabalho para planear turnos','Mensagens para recuperar clientes inativos (com consentimento)'],'Cerca de 20 a 60 €/mês conforme o volume de conversas']];
+document.getElementById('phases').innerHTML=F.map(f=>`<div class="phase ${f[0]}"><span class="when">${f[1]}</span><h3>${f[2]}</h3><ul>${f[3].map(x=>`<li>${x}</li>`).join('')}</ul><div class="cost">${f[4]}</div></div>`).join('');
+
+const Q=['Já usa algum sistema para fotografar ou contar as peças?','Quantos sacos e peças entram num dia normal? E num dia cheio?','Quantas mensagens de WhatsApp envia por dia, e quem as escreve?','Que programa usa hoje para faturar, e qual prefere o seu contabilista?','Como funciona o saldo de fim de mês: clientes com conta mensal, peças por levantar, ou ambos?','Quantas entregas faz por dia, quem conduz e em que zonas?','Como pagam hoje os clientes, e quanto fica por receber no fim do mês?','Que tarefa lhe custa mais e gostava de deixar de fazer já amanhã?'];
+document.getElementById('qs').innerHTML=Q.map(q=>`<li>${q}</li>`).join('');
+
+const C=[
+['sacos','Sacos que entram por dia',25,5,120,5,''],
+['msac','Minutos a contar e dar preço por saco',6,1,15,1,' min'],
+['msgs','Mensagens WhatsApp por dia',60,5,200,5,''],
+['mmsg','Minutos por mensagem',2,0.5,5,0.5,' min'],
+['fat','Faturas por dia',30,0,150,5,''],
+['mfat','Minutos por fatura',3,0.5,8,0.5,' min'],
+['fecho','Horas a fechar o saldo do mês',12,0,40,1,' h'],
+['rota','Horas de entregas por dia',4,0,10,0.5,' h'],
+['dias','Dias de trabalho por mês',24,18,30,1,''],
+['eur','Custo de uma hora de trabalho',12,6,30,1,' €']];
+const ctl=document.getElementById('ctl');
+ctl.innerHTML=C.map(c=>`<div><label for="${c[0]}"><span>${c[1]}</span><output id="o_${c[0]}"></output></label><input type="range" id="${c[0]}" min="${c[3]}" max="${c[4]}" step="${c[5]}" value="${c[2]}"></div>`).join('');
+const v=id=>+document.getElementById(id).value;
+const fmt=n=>n.toLocaleString('pt-PT',{maximumFractionDigits:1});
+const calc=()=>{
+  C.forEach(c=>{document.getElementById('o_'+c[0]).textContent=fmt(v(c[0]))+c[6]});
+  const d=v('dias'),k=.8;
+  const c=v('sacos')*v('msac')*d*k/60,w=v('msgs')*v('mmsg')*d*k/60,f=v('fat')*v('mfat')*d*k/60,s=v('fecho')*k,r=v('rota')*d*.2;
+  const t=c+w+f+s+r;
+  document.getElementById('hrs').textContent=fmt(Math.round(t))+' h';
+  document.getElementById('rows').innerHTML=[['Contagem e preço',c],['Mensagens',w],['Faturas',f],['Fecho do mês',s],['Rotas',r]].map(x=>`<div><span>${x[0]}</span><span>${fmt(Math.round(x[1]))} h</span></div>`).join('')+`<div><span>Valor do tempo poupado</span><span>${fmt(Math.round(t*v('eur')))} €/mês</span></div>`;
+};
+ctl.addEventListener('input',calc);calc();
+
+const SN=[['home','Casa'],['van','Recolha'],['doc','Loja'],['cam','Câmara'],['iron','Engomar'],['van','Entrega'],['home','Casa']];
+const PX=[0,1,2,3,3,4,4,5,6,6,6,6];
+const ITEMS=[['Camisa','1,90 €'],['Camisa','1,90 €'],['Calças','1,65 €'],['Camisa','1,90 €'],['Lençol','1,00 €'],['Calças','1,65 €']];
+const A=[
+['Cliente','O pedido','A D. Teresa lava a roupa em casa e pede por WhatsApp que lhe venham buscar o saco. O assistente marca a recolha sozinho.',['in','Bom dia, podem vir buscar roupa para engomar amanhã?'],['out','Combinado, D. Teresa! Recolha amanhã entre as 10h e as 12h.']],
+['Estafeta','Recolha do saco fechado','O estafeta leva o saco sem o abrir e cola-lhe uma etiqueta com QR. A partir daqui o saco tem nome.',['out','Recolhemos o seu saco. Contamos as peças na loja e enviamos a lista ainda hoje.']],
+['Loja','Chegada à loja','Na bancada, lê-se o QR do saco com o telemóvel e abre-se a ficha da D. Teresa.',null],
+['Câmara + IA','Cada peça debaixo da câmara','A funcionária estica cada peça no tapete. A IA reconhece o tipo de peça e aplica o preço da tabela. Ela só confirma.','tally'],
+['Sistema','A lista chega à cliente','No mesmo dia, a cliente recebe a contagem, as fotos e o valor previsto, e confirma. Acabaram as discussões sobre peças em falta.',['out','Contámos 14 peças: 8 camisas, 4 calças, 2 lençóis (fotos no link). Valor previsto: 23,80 €. Responda OK.'],['in','OK, obrigada!']],
+['Loja','Engomar','Engoma-se como sempre. No fim, um toque no QR marca o saco como pronto.',null],
+['Sistema','Roupa pronta','A cliente recebe o aviso e escolhe a hora de entrega com uma resposta.',['out','A sua roupa está pronta! Entregamos amanhã entre as 18h e as 20h? Responda 1 para sim.'],['in','1']],
+['Sistema','Rota do dia','As entregas do dia ficam por ordem no telemóvel do estafeta, e cada cliente sabe quando ele chega.',['out','O estafeta está a caminho e chega dentro de cerca de 20 minutos.']],
+['Estafeta','Entrega em casa','A roupa engomada chega à porta. O estafeta lê o QR e a cliente confirma com um toque.',null],
+['Cliente','Pagamento por MB WAY','O pedido de pagamento chega no WhatsApp, com MB WAY ou referência Multibanco.',['out','Total: 23,80 €. Pague por MB WAY aqui ou com a referência Multibanco.'],['in','Pago ✓']],
+['Sistema','Fatura certificada','Com o pagamento recebido, o programa certificado emite a fatura-recibo e envia-a. Fica comunicada à AT.',['out','Pagamento recebido, obrigado! Segue a sua fatura-recibo em PDF.']],
+['Sistema','Saldo do mês atualizado','O saldo de peças da cliente fecha sozinho. O que ainda estiver na loja passa para o mês seguinte.','saldo']];
+const sts=document.getElementById('sts');
+sts.innerHTML=SN.map(x=>`<div class="st"><i>${ic[x[0]]}</i>${x[1]}</div>`).join('');
+const dots=document.getElementById('dots');
+dots.innerHTML=A.map((a,i)=>`<button aria-label="Passo ${i+1}: ${a[1]}"></button>`).join('');
+const bag=document.getElementById('bag'),rf=document.getElementById('rf'),chat=document.getElementById('chat'),ex=document.getElementById('aextra'),playB=document.getElementById('play');
+let cur=0,timer=null,playing=!matchMedia('(prefers-reduced-motion: reduce)').matches;
+const bub=(m,d)=>`<div class="bub ${m[0]=='in'?'in':''}" style="animation-delay:${d}s"><b>${m[0]=='in'?'D. Teresa':'Lavandaria (automático)'}</b>${m[1]}</div>`;
+const show=i=>{
+  cur=(i+A.length)%A.length;const a=A[cur],p=PX[cur];
+  const left=(p+.5)/7*100;
+  bag.style.left=`calc(12px + (100% - 24px) * ${left/100})`;
+  rf.style.width=(p/6*100)+'%';
+  [...sts.children].forEach((e,k)=>{e.className='st'+(k<p?' on':'')+(k==p?' cur':'')});
+  [...dots.children].forEach((e,k)=>e.classList.toggle('on',k==cur));
+  document.getElementById('an').textContent=`Passo ${cur+1} de ${A.length} · ${a[0]}`;
+  document.getElementById('at').textContent=a[1];
+  document.getElementById('ax').textContent=a[2];
+  const msgs=a.slice(3).filter(m=>Array.isArray(m));
+  chat.innerHTML=msgs.length?msgs.map((m,k)=>bub(m,.3+k*1.1)).join(''):'<div class="none">Sem mensagens neste passo. Tudo acontece na loja.</div>';
+  if(a[3]=='tally'){ex.innerHTML='<div class="cam">'+ITEMS.map((t,k)=>`<span style="animation-delay:${.3+k*.45}s">${t[0]} ${t[1]}</span>`).join('')+`</div><ul class="tally"><li style="animation-delay:3.2s"><span>8 camisas × 1,90 €</span><b>15,20 €</b></li><li style="animation-delay:3.4s"><span>4 calças × 1,65 €</span><b>6,60 €</b></li><li style="animation-delay:3.6s"><span>2 lençóis × 1,00 €</span><b>2,00 €</b></li><li class="tot" style="animation-delay:3.8s"><span>14 peças</span><b>23,80 €</b></li></ul>`;chat.innerHTML='<div class="none">A contar peças…</div>'}
+  else if(a[3]=='saldo'){ex.innerHTML='<ul class="tally"><li><span>Entraram este mês</span><b>14 peças</b></li><li style="animation-delay:.4s"><span>Entregues</span><b>14 peças</b></li><li class="tot" style="animation-delay:.8s"><span>Por entregar (passa para dezembro)</span><b>0</b></li></ul>';chat.innerHTML='<div class="none">Nada a enviar. O saldo atualiza-se sozinho.</div>'}
+  else ex.innerHTML='';
+  schedule();
+};
+const schedule=()=>{clearTimeout(timer);if(playing){const a=A[cur];timer=setTimeout(()=>{if(cur==A.length-1){playing=false;playB.textContent='Continuar';return}show(cur+1)},a[3]=='tally'?6500:4800)}};
+playB.textContent=playing?'Pausar':'Continuar';
+playB.onclick=()=>{playing=!playing;playB.textContent=playing?'Pausar':'Continuar';if(playing&&cur==A.length-1)show(0);else schedule()};
+document.getElementById('next').onclick=()=>show(cur+1);
+document.getElementById('prev').onclick=()=>show(cur-1);
+document.getElementById('again').onclick=()=>{playing=true;playB.textContent='Pausar';show(0)};
+[...dots.children].forEach((b,k)=>b.onclick=()=>show(k));
+show(0);
+}
+</script>
+</body>
+</html>
